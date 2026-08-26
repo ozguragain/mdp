@@ -14,8 +14,14 @@ type Lexer struct {
 func NewLexer(input string) *Lexer {
 	input = strings.ReplaceAll(input, "\r\n", "\n")
 
+	// Empty input produces no lines at all; only an EOF token will be emitted.
+	var lines []string
+	if input != "" {
+		lines = strings.Split(input, "\n")
+	}
+
 	return &Lexer{
-		lines:       strings.Split(input, "\n"),
+		lines:       lines,
 		position:    0,
 		inCodeBlock: false,
 	}
@@ -46,7 +52,7 @@ func (l *Lexer) NextToken() Token {
 
 	// Code block end state check
 	if l.inCodeBlock {
-		if strings.HasPrefix(trimmed, "```") {
+		if backtickRun(trimmed) >= 3 {
 			l.inCodeBlock = false
 			return Token{Type: TokenCodeFence, Literal: line}
 		}
@@ -59,10 +65,11 @@ func (l *Lexer) NextToken() Token {
 	}
 
 	// Code block start state check
-	if strings.HasPrefix(trimmed, "```") {
+	// A fenced code block opens with a run of 3 or more backticks (CommonMark).
+	if btCount := backtickRun(trimmed); btCount >= 3 {
 		l.inCodeBlock = true
-		language := strings.TrimPrefix(trimmed, "```")
-		return Token{Type: TokenCodeFence, Literal: line, Meta: strings.TrimSpace(language)}
+		language := strings.TrimSpace(trimmed[btCount:])
+		return Token{Type: TokenCodeFence, Literal: line, Meta: language}
 	}
 
 	// Headings
@@ -92,4 +99,16 @@ func (l *Lexer) NextToken() Token {
 	}
 
 	return Token{Type: TokenTextLine, Literal: line}
+}
+
+// backtickRun returns the number of leading backtick characters in s.
+func backtickRun(s string) int {
+	n := 0
+	for _, ch := range s {
+		if ch != '`' {
+			break
+		}
+		n++
+	}
+	return n
 }
