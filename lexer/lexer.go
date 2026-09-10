@@ -15,12 +15,13 @@ func NewLexer(input string) *Lexer {
 	input = strings.ReplaceAll(input, "\r\n", "\n")
 
 	// Empty input produces no lines at all; only an EOF token will be emitted.
-	var lines []string
-	if input != "" {
-		lines = strings.Split(input, "\n")
+	if input == "" {
+		return &Lexer{lines: nil, position: 0, inCodeBlock: false}
 	}
 
-	lines = strings.Split(input, "\n")
+	lines := strings.Split(input, "\n")
+	// A single trailing newline terminates the last line; it is not an
+	// extra blank line (strings.Split would otherwise yield a ghost "").
 	if strings.HasSuffix(input, "\n") && len(lines) > 0 && lines[len(lines)-1] == "" {
 		lines = lines[:len(lines)-1]
 	}

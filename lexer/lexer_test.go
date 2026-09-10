@@ -85,20 +85,24 @@ func TestTokenizeEmptyInput(t *testing.T) {
 			},
 		},
 		{
-			name:  "single newline yields two blank lines then EOF",
+			name:  "single newline yields one blank line then EOF",
 			input: "\n",
 			want: []Token{
-				{Type: TokenBlankLine, Literal: ""},
 				{Type: TokenBlankLine, Literal: ""},
 				{Type: TokenEOF},
 			},
 		},
 		{
-			// Characterization: strings.Split("text\n", "\n") returns
-			// ["text", ""], so a trailing newline currently produces an
-			// extra BLANK_LINE token at the end of the stream.
-			name:  "trailing newline emits a final blank line token",
+			name:  "trailing newline does not emit an extra blank line",
 			input: "text\n",
+			want: []Token{
+				{Type: TokenTextLine, Literal: "text"},
+				{Type: TokenEOF},
+			},
+		},
+		{
+			name:  "double trailing newline keeps one real blank line",
+			input: "text\n\n",
 			want: []Token{
 				{Type: TokenTextLine, Literal: "text"},
 				{Type: TokenBlankLine, Literal: ""},
