@@ -20,6 +20,11 @@ func NewLexer(input string) *Lexer {
 		lines = strings.Split(input, "\n")
 	}
 
+	lines = strings.Split(input, "\n")
+	if strings.HasSuffix(input, "\n") && len(lines) > 0 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
+
 	return &Lexer{
 		lines:       lines,
 		position:    0,
