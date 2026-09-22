@@ -1,34 +1,40 @@
+// Command mdp renders markdown to HTML.
+//
+// Usage:
+//
+//	mdp [file.md]   # without an argument, reads stdin
+//
+// The HTML fragment is written to stdout; errors go to stderr with a
+// non-zero exit code.
 package main
 
 import (
 	"fmt"
+	"io"
+	"os"
 
+	"github.com/ozguragain/mdp/codegen"
 	"github.com/ozguragain/mdp/lexer"
+	"github.com/ozguragain/mdp/parser"
 )
 
 func main() {
-	// Markdown input for testing the lexer
-	markdown := `# Hi Lexer!
-	This is first markdown text line. 
-	
-	- This is first list item.
-	- This is second list item.
-
-	` + "```go\n" +
-		`func main() {
-		fmt.Println("Hello, World!")
-	}` + "\n```" + `
-
-	> This is a blockquote.
-
-	This is second markdown text line.
-	`
-
-	l := lexer.NewLexer(markdown)
-	tokens := l.Tokenize()
-
-	fmt.Println("---Detected Tokens---")
-	for i, token := range tokens {
-		fmt.Printf("[%02d] Type: %-15s | Meta: %-4s | Literal: %q\n", i, token.Type, token.Meta, token.Literal)
+	input, err := readInput()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "mdp:", err)
+		os.Exit(1)
 	}
+
+	tokens := lexer.NewLexer(string(input)).Tokenize()
+	doc := parser.NewParser(tokens).Parse()
+	fmt.Print(codegen.RenderHTML(doc))
+}
+
+// readInput returns the contents of the file given as the first argument,
+// or everything read from stdin when no argument is provided.
+func readInput() ([]byte, error) {
+	if len(os.Args) > 1 {
+		return os.ReadFile(os.Args[1])
+	}
+	return io.ReadAll(os.Stdin)
 }
