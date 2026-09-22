@@ -445,4 +445,3 @@ func FuzzTokenize(f *testing.F) {
 		tokenize(t, input)
 	})
 }
-
