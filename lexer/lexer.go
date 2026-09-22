@@ -14,23 +14,15 @@ type Lexer struct {
 func NewLexer(input string) *Lexer {
 	input = strings.ReplaceAll(input, "\r\n", "\n")
 
-	// Empty input produces no lines at all; only an EOF token will be emitted.
-	if input == "" {
-		return &Lexer{lines: nil, position: 0, inCodeBlock: false}
-	}
-
 	lines := strings.Split(input, "\n")
-	// A single trailing newline terminates the last line; it is not an
-	// extra blank line (strings.Split would otherwise yield a ghost "").
-	if strings.HasSuffix(input, "\n") && len(lines) > 0 && lines[len(lines)-1] == "" {
+	// Split always yields at least one element; the last one is "" only for
+	// empty input or a trailing newline. In both cases it is a ghost that
+	// must not become a blank line token.
+	if lines[len(lines)-1] == "" {
 		lines = lines[:len(lines)-1]
 	}
 
-	return &Lexer{
-		lines:       lines,
-		position:    0,
-		inCodeBlock: false,
-	}
+	return &Lexer{lines: lines}
 }
 
 func (l *Lexer) Tokenize() []Token {
@@ -48,7 +40,7 @@ func (l *Lexer) Tokenize() []Token {
 
 func (l *Lexer) NextToken() Token {
 	if l.position >= len(l.lines) {
-		return Token{Type: TokenEOF, Literal: "", Meta: ""}
+		return Token{Type: TokenEOF}
 	}
 
 	line := l.lines[l.position]
@@ -80,16 +72,8 @@ func (l *Lexer) NextToken() Token {
 
 	// Headings
 	if strings.HasPrefix(trimmed, "#") {
-		hashCount := 0
-		for _, ch := range trimmed {
-			if ch == '#' {
-				hashCount++
-			} else {
-				break
-			}
-		}
-
-		if hashCount > 0 && hashCount <= 6 && len(trimmed) > hashCount && trimmed[hashCount] == ' ' {
+		hashCount := len(trimmed) - len(strings.TrimLeft(trimmed, "#"))
+		if hashCount <= 6 && len(trimmed) > hashCount && trimmed[hashCount] == ' ' {
 			return Token{Type: TokenHeading, Literal: line, Meta: strconv.Itoa(hashCount)} // level of heading
 		}
 	}

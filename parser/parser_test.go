@@ -164,6 +164,40 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
+			name: "indented continuation lines stay inside the item",
+			src:  "- item one\n  continued line\n- item two",
+			want: []ast.BlockNode{
+				&ast.ListNode{Items: []*ast.ListItemNode{
+					{Blocks: []ast.BlockNode{para("item one", "continued line")}},
+					{Blocks: []ast.BlockNode{para("item two")}},
+				}},
+			},
+		},
+		{
+			name: "fence inside an item keeps the list together",
+			src:  "- example\n  ```\n  x := 1\n\n  y := 2\n  ```",
+			want: []ast.BlockNode{
+				&ast.ListNode{Items: []*ast.ListItemNode{
+					{Blocks: []ast.BlockNode{
+						para("example"),
+						&ast.FencedCodeBlockNode{Lines: []string{"x := 1", "", "y := 2"}},
+					}},
+				}},
+			},
+		},
+		{
+			name: "item fence may close at column zero",
+			src:  "- a\n  ```\n  x\n```",
+			want: []ast.BlockNode{
+				&ast.ListNode{Items: []*ast.ListItemNode{
+					{Blocks: []ast.BlockNode{
+						para("a"),
+						&ast.FencedCodeBlockNode{Lines: []string{"x"}},
+					}},
+				}},
+			},
+		},
+		{
 			name: "blank line ends a list",
 			src:  "- a\n\n- b",
 			want: []ast.BlockNode{

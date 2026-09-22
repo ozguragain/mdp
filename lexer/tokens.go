@@ -15,6 +15,6 @@ const (
 
 type Token struct {
 	Type    TokenType
-	Literal string // Originak text of the token
+	Literal string // Original text of the token
 	Meta    string // Extra information about the token
 }

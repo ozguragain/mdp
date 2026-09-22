@@ -31,7 +31,7 @@ func (p *Parser) Parse() *ast.DocumentNode {
 
 func (p *Parser) currentToken() lexer.Token {
 	if p.position >= len(p.tokens) {
-		return lexer.Token{Type: lexer.TokenEOF, Literal: ""}
+		return lexer.Token{Type: lexer.TokenEOF}
 	}
 	return p.tokens[p.position]
 }
@@ -137,9 +137,11 @@ func (p *Parser) parseList() *ast.ListNode {
 	return list
 }
 
-// parseListItem builds one list item. Following items that are indented
-// deeper than this one are absorbed as its content, so nested lists fall
-// out of the recursive parse naturally.
+// parseListItem builds one list item. Following lines indented deeper
+// than the marker are absorbed as its content — wrapped text and nested
+// blocks alike — so nested lists fall out of the recursive parse
+// naturally. Inside a fence opened from the item, everything up to the
+// closing fence is content, whatever its indentation.
 func (p *Parser) parseListItem() *ast.ListItemNode {
 	tok := p.currentToken()
 	p.nextToken()
@@ -149,10 +151,20 @@ func (p *Parser) parseListItem() *ast.ListItemNode {
 	content = strings.TrimSpace(content[2:]) // drop the "- " / "* " / "+ " marker
 
 	lines := []string{content}
+	inFence := false
 	for {
 		next := p.currentToken()
-		if next.Type != lexer.TokenListItem || leadingSpaces(next.Literal) <= indent {
+		if next.Type == lexer.TokenEOF {
 			break
+		}
+		if !inFence && next.Type == lexer.TokenBlankLine {
+			break // a blank line ends the item
+		}
+		if !inFence && leadingSpaces(next.Literal) <= indent {
+			break // sibling item or top-level block
+		}
+		if next.Type == lexer.TokenCodeFence {
+			inFence = !inFence // open the item's fence, then close it
 		}
 		lines = append(lines, dedent(next.Literal, indent+2))
 		p.nextToken()
@@ -195,8 +207,8 @@ func trimClosingHashes(s string) string {
 // blockquote line, yielding the raw source of the quoted content. Nested
 // markers (">> deep") survive and are handled by the recursive parse.
 func stripQuoteMarker(line string) string {
-	i := strings.Index(line, ">")
-	return strings.TrimPrefix(line[i+1:], " ")
+	s := strings.TrimPrefix(strings.TrimSpace(line), ">")
+	return strings.TrimPrefix(s, " ")
 }
 
 // leadingSpaces returns the count of leading space characters in s.

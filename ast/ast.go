@@ -63,13 +63,3 @@ func (*ListNode) blockNode()            {}
 func (*ListItemNode) blockNode()        {}
 
 func (*TextNode) inlineNode() {}
-
-var (
-	_ BlockNode  = (*HeadingNode)(nil)
-	_ BlockNode  = (*ParagraphNode)(nil)
-	_ BlockNode  = (*FencedCodeBlockNode)(nil)
-	_ BlockNode  = (*BlockquoteNode)(nil)
-	_ BlockNode  = (*ListNode)(nil)
-	_ BlockNode  = (*ListItemNode)(nil)
-	_ InlineNode = (*TextNode)(nil)
-)
