@@ -50,7 +50,32 @@ type ListItemNode struct {
 	Blocks []BlockNode
 }
 
-// TextNode carries a raw, not-yet-inline-parsed piece of text.
+// EmphasisNode wraps inline children in emphasis (`*x*` / `_x_`).
+type EmphasisNode struct {
+	Children []InlineNode
+}
+
+// StrongNode wraps inline children in strong emphasis (`**x**` / `__x__`).
+type StrongNode struct {
+	Children []InlineNode
+}
+
+// CodeNode is a code span; Value is literal text, never further parsed.
+type CodeNode struct {
+	Value string
+}
+
+// LinkNode is an inline link `[text](dest "title")`. Destination is always
+// URL-sanitized (unsafe links never become a LinkNode).
+type LinkNode struct {
+	Destination string       // raw destination as written
+	Title       string       // optional; "" when absent
+	Children    []InlineNode // label, recursively parsed; nested links suppressed
+}
+
+// TextNode carries text. Before the inline phase it holds raw, unparsed
+// source text (one node per source line); after inline.Process it holds a
+// literal run of text in which "\n" acts as a soft line break.
 type TextNode struct {
 	Value string
 }
@@ -62,4 +87,8 @@ func (*BlockquoteNode) blockNode()      {}
 func (*ListNode) blockNode()            {}
 func (*ListItemNode) blockNode()        {}
 
-func (*TextNode) inlineNode() {}
+func (*TextNode) inlineNode()     {}
+func (*EmphasisNode) inlineNode() {}
+func (*StrongNode) inlineNode()   {}
+func (*CodeNode) inlineNode()     {}
+func (*LinkNode) inlineNode()     {}

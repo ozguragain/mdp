@@ -45,17 +45,45 @@ func renderBlock(b *strings.Builder, block ast.BlockNode) {
 	}
 }
 
-// renderInlines joins the inline nodes of a block. Today the parser only
-// produces TextNodes (one per source line); the newlines between them act
-// as soft breaks in HTML.
+// renderInlines renders the inline nodes of a block to an HTML string. Text
+// nodes carry their own soft breaks (newlines in Value), so nodes are simply
+// written back to back with no extra separator.
 func renderInlines(inlines []ast.InlineNode) string {
-	parts := make([]string, 0, len(inlines))
+	var b strings.Builder
 	for _, inline := range inlines {
-		if text, ok := inline.(*ast.TextNode); ok {
-			parts = append(parts, html.EscapeString(text.Value))
-		}
+		renderInline(&b, inline)
 	}
-	return strings.Join(parts, "\n")
+	return b.String()
+}
+
+// renderInline writes one inline node. Every piece of user text — code span
+// content and link attributes included — goes through html.EscapeString so
+// no raw markup or attribute breakout can reach the output.
+func renderInline(b *strings.Builder, node ast.InlineNode) {
+	switch n := node.(type) {
+	case *ast.TextNode:
+		b.WriteString(html.EscapeString(n.Value))
+	case *ast.EmphasisNode:
+		b.WriteString("<em>")
+		b.WriteString(renderInlines(n.Children))
+		b.WriteString("</em>")
+	case *ast.StrongNode:
+		b.WriteString("<strong>")
+		b.WriteString(renderInlines(n.Children))
+		b.WriteString("</strong>")
+	case *ast.CodeNode:
+		b.WriteString("<code>")
+		b.WriteString(html.EscapeString(n.Value))
+		b.WriteString("</code>")
+	case *ast.LinkNode:
+		fmt.Fprintf(b, "<a href=\"%s\"", html.EscapeString(n.Destination))
+		if n.Title != "" {
+			fmt.Fprintf(b, " title=\"%s\"", html.EscapeString(n.Title))
+		}
+		b.WriteString(">")
+		b.WriteString(renderInlines(n.Children))
+		b.WriteString("</a>")
+	}
 }
 
 func renderCodeBlock(b *strings.Builder, n *ast.FencedCodeBlockNode) {

@@ -14,6 +14,7 @@ import (
 	"os"
 
 	"github.com/ozguragain/mdp/codegen"
+	"github.com/ozguragain/mdp/inline"
 	"github.com/ozguragain/mdp/lexer"
 	"github.com/ozguragain/mdp/parser"
 )
@@ -27,6 +28,7 @@ func main() {
 
 	tokens := lexer.NewLexer(string(input)).Tokenize()
 	doc := parser.NewParser(tokens).Parse()
+	inline.Process(doc)
 	fmt.Print(codegen.RenderHTML(doc))
 }
 

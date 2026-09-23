@@ -181,7 +181,8 @@ func parseSource(src string) []ast.BlockNode {
 }
 
 // textInlines wraps raw text as a single TextNode. Inline markup (emphasis,
-// links, code spans) is a separate future phase; today text stays raw.
+// links, code spans) is a separate phase: package inline later joins and
+// re-splits these raw nodes via inline.Process. Here text stays raw.
 func textInlines(text string) []ast.InlineNode {
 	if text == "" {
 		return nil
