@@ -20,14 +20,32 @@ profile.cov
 go.work
 go.work.sum
 
-# env file
-.env
+.env*
+!.env.example
 
-# Editor/IDE
+/mdp
+/cli
+
+*.prof
+
+dist/
+
+.idea/
+*.iml
+
+*~
+*.swp
+
+.superpowers/
+
+._*
+
 .vscode/
 
 .DS_Store
 *.exe
 *.wasm
 bin/
+
+docs/
 
