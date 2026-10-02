@@ -5,27 +5,22 @@ import (
 	"strings"
 )
 
-// allowedSchemes are the only URL schemes that may appear in an href.
-// Everything else (javascript:, data:, vbscript:, file:, blob:, ...) is
-// rejected. Scheme-less references (relative paths, #fragments, ?queries,
-// //host) are allowed.
+// allowedSchemes are the only URL schemes allowed in an href.
 var allowedSchemes = map[string]bool{
 	"http":   true,
 	"https":  true,
 	"mailto": true,
 }
 
-// isSafeURL reports whether raw may be emitted into an href attribute.
-// Both the raw form and its HTML-entity-decoded form must be safe, so
-// obfuscations like "&#106;avascript:" are caught as well.
+// isSafeURL checks both the raw form and its HTML-entity-decoded form
+// against the scheme allowlist, so obfuscations like "&#106;avascript:" are
+// caught as well.
 func isSafeURL(raw string) bool {
 	return schemeOK(raw) && schemeOK(html.UnescapeString(raw))
 }
 
-// schemeOK reports whether s passes the URL scheme allowlist. Characters
-// of 0x20 and below (whitespace and controls) are dropped first so that
-// split schemes like "java\tscript:" or "java script:" are caught; the
-// comparison is ASCII case-insensitive.
+// schemeOK checks s against the allowlist after dropping bytes <= 0x20 and
+// lowercasing, so split schemes like "java\tscript:" are caught too.
 func schemeOK(s string) bool {
 	var b strings.Builder
 	for i := 0; i < len(s); i++ {
@@ -36,8 +31,8 @@ func schemeOK(s string) bool {
 	cleaned := strings.ToLower(b.String())
 
 	// A scheme is present only when ":" comes before any "/", "?" or "#"
-	// and the prefix is a valid scheme name. Anything else is a relative
-	// reference and safe.
+	// and the prefix is a valid scheme name; otherwise the reference is
+	// relative and safe.
 	colon := strings.IndexByte(cleaned, ':')
 	if colon < 0 {
 		return true

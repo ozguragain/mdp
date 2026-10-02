@@ -9,9 +9,8 @@ import (
 	"github.com/ozguragain/mdp/ast"
 )
 
-// RenderHTML converts a document tree into an HTML fragment string.
-// All text is escaped; no <html>/<body> wrapper is produced. Each
-// top-level block ends with a newline.
+// RenderHTML renders a document tree as an escaped HTML fragment: no
+// wrapper, and each top-level block ends with a newline.
 func RenderHTML(doc *ast.DocumentNode) string {
 	var b strings.Builder
 	renderBlocks(&b, doc.Blocks)
@@ -45,9 +44,8 @@ func renderBlock(b *strings.Builder, block ast.BlockNode) {
 	}
 }
 
-// renderInlines renders the inline nodes of a block to an HTML string. Text
-// nodes carry their own soft breaks (newlines in Value), so nodes are simply
-// written back to back with no extra separator.
+// renderInlines renders a block's inline nodes back to back (soft breaks
+// live inside text values).
 func renderInlines(inlines []ast.InlineNode) string {
 	var b strings.Builder
 	for _, inline := range inlines {
@@ -56,9 +54,8 @@ func renderInlines(inlines []ast.InlineNode) string {
 	return b.String()
 }
 
-// renderInline writes one inline node. Every piece of user text — code span
-// content and link attributes included — goes through html.EscapeString so
-// no raw markup or attribute breakout can reach the output.
+// renderInline writes one node; all user text goes through html.EscapeString
+// so nothing can break out of markup or an attribute.
 func renderInline(b *strings.Builder, node ast.InlineNode) {
 	switch n := node.(type) {
 	case *ast.TextNode:
@@ -99,9 +96,8 @@ func renderCodeBlock(b *strings.Builder, n *ast.FencedCodeBlockNode) {
 	b.WriteString("</code></pre>\n")
 }
 
-// renderListItem writes one <li>. An item whose content is a single
-// paragraph renders its text directly (tight list style); anything richer
-// renders its full block tree.
+// renderListItem writes one <li>, tight style when the item is a single
+// paragraph.
 func renderListItem(b *strings.Builder, item *ast.ListItemNode) {
 	if len(item.Blocks) == 1 {
 		if para, ok := item.Blocks[0].(*ast.ParagraphNode); ok {
@@ -114,9 +110,8 @@ func renderListItem(b *strings.Builder, item *ast.ListItemNode) {
 	b.WriteString("</li>\n")
 }
 
-// firstWord extracts the language name from a raw info string
-// ("js {hl_lines=[1]}" -> "js"). Highlighting attributes are not
-// interpreted yet; that is a future concern.
+// firstWord takes the language from a raw info string
+// ("js {hl_lines=[1]}" -> "js").
 func firstWord(info string) string {
 	fields := strings.Fields(info)
 	if len(fields) == 0 {

@@ -1,17 +1,16 @@
-// Command mdp renders markdown to HTML.
-//
-// Usage:
+// Command mdp renders markdown to HTML: an HTML fragment on stdout and
+// diagnostics as "line:col: [kind] message" lines on stderr.
 //
 //	mdp [file.md]   # without an argument, reads stdin
 //
-// The HTML fragment is written to stdout; errors go to stderr with a
-// non-zero exit code.
+// Diagnostics do not affect the exit code; only input failures exit non-zero.
 package main
 
 import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 
 	"github.com/ozguragain/mdp/codegen"
 	"github.com/ozguragain/mdp/inline"
@@ -27,13 +26,19 @@ func main() {
 	}
 
 	tokens := lexer.NewLexer(string(input)).Tokenize()
-	doc := parser.NewParser(tokens).Parse()
-	inline.Process(doc)
+	p := parser.NewParser(tokens)
+	doc := p.Parse()
+	diags := p.Diagnostics()
+	diags = append(diags, inline.Process(doc)...)
+	sort.SliceStable(diags, func(i, j int) bool {
+		return diags[i].Span.Start.Offset < diags[j].Span.Start.Offset
+	})
+	for _, d := range diags {
+		fmt.Fprintf(os.Stderr, "mdp: %s\n", d)
+	}
 	fmt.Print(codegen.RenderHTML(doc))
 }
 
-// readInput returns the contents of the file given as the first argument,
-// or everything read from stdin when no argument is provided.
 func readInput() ([]byte, error) {
 	if len(os.Args) > 1 {
 		return os.ReadFile(os.Args[1])

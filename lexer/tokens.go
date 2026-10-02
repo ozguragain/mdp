@@ -1,5 +1,7 @@
 package lexer
 
+import "github.com/ozguragain/mdp/ast"
+
 type TokenType string
 
 const (
@@ -15,6 +17,7 @@ const (
 
 type Token struct {
 	Type    TokenType
-	Literal string // Original text of the token
-	Meta    string // Extra information about the token
+	Literal string   // Original text of the token
+	Meta    string   // Extra information about the token
+	Span    ast.Span // Source extent of the token (a whole line, or a point at EOF)
 }

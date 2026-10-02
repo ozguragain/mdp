@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>mdp e2e rendered output</title>
+</head>
+<body>
+<!-- Deterministic: one section per executed case, sorted by case id; no timestamps, no absolute paths. -->
+<section data-case="block-atx-basic">
+<!-- case: block-atx-basic -->
+<h1>H1</h1>
+</section>
+<section data-case="block-atx-closing-hashes">
+<!-- case: block-atx-closing-hashes -->
+<h2>H2</h2>
+</section>
+<section data-case="block-atx-empty-hash-literal">
+<!-- case: block-atx-empty-hash-literal -->
+<p>#</p>
+</section>
+<section data-case="block-atx-hash-in-content">
+<!-- case: block-atx-hash-in-content -->
+<h1>C# rocks</h1>
+</section>
+<section data-case="block-atx-inline-spans">
+<!-- case: block-atx-inline-spans -->
+<h3><em>x</em></h3>
+</section>
+<section data-case="block-atx-no-space-literal">
+<!-- case: block-atx-no-space-literal -->
+<p>#no-space</p>
+</section>
+<section data-case="block-blockquote-nested">
+<!-- case: block-blockquote-nested -->
+<blockquote>
+<p>one
+two</p>
+<blockquote>
+<p>nested</p>
+</blockquote>
+</blockquote>
+<p>after</p>
+</section>
+<section data-case="block-crlf-normalized">
+<!-- case: block-crlf-normalized -->
+<h1>Title</h1>
+<p>body</p>
+<ul>
+<li>item</li>
+</ul>
+</section>
+<section data-case="block-emphasis-across-soft-break">
+<!-- case: block-emphasis-across-soft-break -->
+<p><em>a
+b</em></p>
+</section>
+<section data-case="block-fence-content-escaped">
+<!-- case: block-fence-content-escaped -->
+<pre><code class="language-go">x := `&lt;y&gt;`
+</code></pre>
+</section>
+<section data-case="block-fence-empty">
+<!-- case: block-fence-empty -->
+<pre><code></code></pre>
+</section>
+<section data-case="block-fence-info-first-word">
+<!-- case: block-fence-info-first-word -->
+<pre><code class="language-js">code
+</code></pre>
+</section>
+<section data-case="block-fence-language-class">
+<!-- case: block-fence-language-class -->
+<pre><code class="language-go">x := 1
+</code></pre>
+</section>
+<section data-case="block-fence-plain">
+<!-- case: block-fence-plain -->
+<pre><code>plain
+</code></pre>
+</section>
+<section data-case="block-fence-protects-block-markers">
+<!-- case: block-fence-protects-block-markers -->
+<pre><code># not a heading
+- not a list
+</code></pre>
+</section>
+<section data-case="block-fence-unclosed-runs-to-eof">
+<!-- case: block-fence-unclosed-runs-to-eof -->
+<pre><code>runs to eof
+more
+</code></pre>
+</section>
+<section data-case="block-list-blank-line-splits">
+<!-- case: block-list-blank-line-splits -->
+<ul>
+<li>a</li>
+</ul>
+<ul>
+<li>b</li>
+</ul>
+</section>
+<section data-case="block-list-continuation-lines">
+<!-- case: block-list-continuation-lines -->
+<ul>
+<li>a
+continued</li>
+<li>b</li>
+</ul>
+<p>para</p>
+</section>
+<section data-case="block-list-item-fence">
+<!-- case: block-list-item-fence -->
+<ul>
+<li>
+<p>example</p>
+<pre><code>x
+
+y
+</code></pre>
+</li>
+</ul>
+</section>
+<section data-case="block-list-marker-variants">
+<!-- case: block-list-marker-variants -->
+<ul>
+<li>a</li>
+<li>b</li>
+<li>c</li>
+</ul>
+</section>
+<section data-case="block-list-nested">
+<!-- case: block-list-nested -->
+<ul>
+<li>
+<p>a</p>
+<ul>
+<li>b</li>
+<li>c</li>
+</ul>
+</li>
+<li>d</li>
+</ul>
+</section>
+<section data-case="block-list-tight-bullets">
+<!-- case: block-list-tight-bullets -->
+<ul>
+<li>a</li>
+<li>b</li>
+</ul>
+</section>
+<section data-case="block-paragraph-soft-break">
+<!-- case: block-paragraph-soft-break -->
+<p>one
+two</p>
+</section>
+<section data-case="cli-exit-zero-with-diagnostics">
+<!-- case: cli-exit-zero-with-diagnostics -->
+<p>x</p>
+</section>
+<section data-case="cli-file-argument-renders">
+<!-- case: cli-file-argument-renders -->
+<h1>File arg</h1>
+<p>plain <em>em</em></p>
+</section>
+<section data-case="cli-missing-file-nonzero-exit">
+<!-- case: cli-missing-file-nonzero-exit -->
+
+</section>
+<section data-case="codespan-double-backtick-holds-backtick">
+<!-- case: codespan-double-backtick-holds-backtick -->
+<p><code>a`b</code></p>
+</section>
+<section data-case="codespan-escape-not-interpreted">
+<!-- case: codespan-escape-not-interpreted -->
+<p><code>a\*b</code></p>
+</section>
+<section data-case="codespan-markup-is-literal">
+<!-- case: codespan-markup-is-literal -->
+<p><code>x*y</code></p>
+</section>
+<section data-case="codespan-trims-edge-spaces">
+<!-- case: codespan-trims-edge-spaces -->
+<p><code>x</code></p>
+</section>
+<section data-case="codespan-unmatched-backtick-literal">
+<!-- case: codespan-unmatched-backtick-literal -->
+<p>unmatched ` backtick</p>
+</section>
+<section data-case="diag-code-span-in-blockquote-column">
+<!-- case: diag-code-span-in-blockquote-column -->
+<p>intro</p>
+<blockquote>
+<p>quoted `oops</p>
+</blockquote>
+</section>
+<section data-case="diag-code-span-in-list-item-column">
+<!-- case: diag-code-span-in-list-item-column -->
+<p>intro</p>
+<ul>
+<li>item `oops</li>
+</ul>
+</section>
+<section data-case="diag-nested-blockquote-column">
+<!-- case: diag-nested-blockquote-column -->
+<blockquote>
+<blockquote>
+<p>`oops</p>
+</blockquote>
+</blockquote>
+</section>
+<section data-case="diag-unclosed-code-span-position">
+<!-- case: diag-unclosed-code-span-position -->
+<p>alpha</p>
+<p>beta `oops</p>
+</section>
+<section data-case="diag-unclosed-fence-position">
+<!-- case: diag-unclosed-fence-position -->
+<p>alpha</p>
+<pre><code>body
+more
+</code></pre>
+</section>
+<section data-case="diag-unmatched-delimiter-in-blockquote">
+<!-- case: diag-unmatched-delimiter-in-blockquote -->
+<blockquote>
+<p>x
+**unmatched</p>
+</blockquote>
+</section>
+<section data-case="diag-unmatched-delimiter-position">
+<!-- case: diag-unmatched-delimiter-position -->
+<p>alpha</p>
+<p>be *ta</p>
+</section>
+<section data-case="diag-unresolved-link-in-list-item">
+<!-- case: diag-unresolved-link-in-list-item -->
+<ul>
+<li>x</li>
+<li>[a](/b</li>
+</ul>
+</section>
+<section data-case="diag-unresolved-link-position">
+<!-- case: diag-unresolved-link-position -->
+<p>alpha</p>
+<p>see [a](/b</p>
+</section>
+<section data-case="diag-unsafe-url-in-list-item">
+<!-- case: diag-unsafe-url-in-list-item -->
+<p>ok line</p>
+<blockquote>
+<p>`unclosed</p>
+</blockquote>
+<ul>
+<li>x</li>
+</ul>
+<p>**unmatched at line 7</p>
+</section>
+<section data-case="diag-unsafe-url-position">
+<!-- case: diag-unsafe-url-position -->
+<p>alpha</p>
+<p>see x</p>
+</section>
+<section data-case="inline-em-asterisk">
+<!-- case: inline-em-asterisk -->
+<p><em>em</em></p>
+</section>
+<section data-case="inline-em-strong-triple-run">
+<!-- case: inline-em-strong-triple-run -->
+<p><em><strong>x</strong></em></p>
+</section>
+<section data-case="inline-em-underscore">
+<!-- case: inline-em-underscore -->
+<p><em>em</em></p>
+</section>
+<section data-case="inline-escape-asterisk">
+<!-- case: inline-escape-asterisk -->
+<p>*x*</p>
+</section>
+<section data-case="inline-escape-backslash">
+<!-- case: inline-escape-backslash -->
+<p>a\b</p>
+</section>
+<section data-case="inline-intraword-emphasis">
+<!-- case: inline-intraword-emphasis -->
+<p>un<em>frigging</em>believable</p>
+</section>
+<section data-case="inline-intraword-underscore-literal">
+<!-- case: inline-intraword-underscore-literal -->
+<p>snake_case_name</p>
+</section>
+<section data-case="inline-nested-em-stack">
+<!-- case: inline-nested-em-stack -->
+<p><em>a <em>b</em> c</em></p>
+</section>
+<section data-case="inline-quadruple-run-literal">
+<!-- case: inline-quadruple-run-literal -->
+<p>****x****</p>
+</section>
+<section data-case="inline-spaced-delimiters-literal">
+<!-- case: inline-spaced-delimiters-literal -->
+<p>a * b * c</p>
+</section>
+<section data-case="inline-strong-asterisk">
+<!-- case: inline-strong-asterisk -->
+<p><strong>strong</strong></p>
+</section>
+<section data-case="inline-strong-underscore">
+<!-- case: inline-strong-underscore -->
+<p><strong>strong</strong></p>
+</section>
+<section data-case="inline-strong-wrapping-em">
+<!-- case: inline-strong-wrapping-em -->
+<p><strong>a <em>b</em> c</strong></p>
+</section>
+<section data-case="inline-unequal-run-closes-literal">
+<!-- case: inline-unequal-run-closes-literal -->
+<p>*foo**</p>
+</section>
+<section data-case="inline-unequal-run-opens-literal">
+<!-- case: inline-unequal-run-opens-literal -->
+<p>**foo*</p>
+</section>
+<section data-case="link-balanced-parens-destination">
+<!-- case: link-balanced-parens-destination -->
+<p><a href="/a_(b)">t</a></p>
+</section>
+<section data-case="link-bare-label-literal">
+<!-- case: link-bare-label-literal -->
+<p>[a]</p>
+</section>
+<section data-case="link-basic">
+<!-- case: link-basic -->
+<p><a href="/u">t</a></p>
+</section>
+<section data-case="link-broken-literal">
+<!-- case: link-broken-literal -->
+<p>[a](/b</p>
+</section>
+<section data-case="link-empty-destination">
+<!-- case: link-empty-destination -->
+<p><a href="">a</a></p>
+</section>
+<section data-case="link-nested-link-suppressed">
+<!-- case: link-nested-link-suppressed -->
+<p><a href="/e">a [b](/c) d</a></p>
+</section>
+<section data-case="link-nested-markup-label">
+<!-- case: link-nested-markup-label -->
+<p><a href="/u"><em>t</em></a></p>
+</section>
+<section data-case="link-title">
+<!-- case: link-title -->
+<p><a href="/u" title="T">t</a></p>
+</section>
+<section data-case="plain-document-golden">
+<!-- case: plain-document-golden -->
+<p>This is plain text with no markup.</p>
+<p>A second paragraph with punctuation, (parentheses) and [brackets].
+Line two of the second paragraph.</p>
+</section>
+<section data-case="plain-short-line">
+<!-- case: plain-short-line -->
+<p>Hello, world.</p>
+</section>
+<section data-case="plain-text-escaped">
+<!-- case: plain-text-escaped -->
+<p>a &lt; b &gt; c &amp; d &#34;e&#34;</p>
+</section>
+<section data-case="url-href-ampersand-escaped">
+<!-- case: url-href-ampersand-escaped -->
+<p><a href="https://e.com/x?y=1&amp;z=2">a</a></p>
+</section>
+<section data-case="url-href-quote-escaped">
+<!-- case: url-href-quote-escaped -->
+<p><a href="/a&#34;b">x</a></p>
+</section>
+<section data-case="url-safe-fragment">
+<!-- case: url-safe-fragment -->
+<p><a href="#frag">e</a></p>
+</section>
+<section data-case="url-safe-http">
+<!-- case: url-safe-http -->
+<p><a href="http://e.com">a</a></p>
+</section>
+<section data-case="url-safe-https">
+<!-- case: url-safe-https -->
+<p><a href="https://e.com">a</a></p>
+</section>
+<section data-case="url-safe-mailto">
+<!-- case: url-safe-mailto -->
+<p><a href="mailto:a@b.c">a</a></p>
+</section>
+<section data-case="url-safe-protocol-relative">
+<!-- case: url-safe-protocol-relative -->
+<p><a href="//host/p">f</a></p>
+</section>
+<section data-case="url-safe-relative">
+<!-- case: url-safe-relative -->
+<p><a href="/r">d</a></p>
+</section>
+<section data-case="url-unsafe-blob">
+<!-- case: url-unsafe-blob -->
+<p>x</p>
+</section>
+<section data-case="url-unsafe-data">
+<!-- case: url-unsafe-data -->
+<p>x</p>
+</section>
+<section data-case="url-unsafe-entity-encoded">
+<!-- case: url-unsafe-entity-encoded -->
+<p>x</p>
+</section>
+<section data-case="url-unsafe-file">
+<!-- case: url-unsafe-file -->
+<p>x</p>
+</section>
+<section data-case="url-unsafe-javascript">
+<!-- case: url-unsafe-javascript -->
+<p>x</p>
+</section>
+<section data-case="url-unsafe-javascript-mixed-case">
+<!-- case: url-unsafe-javascript-mixed-case -->
+<p>x</p>
+</section>
+<section data-case="url-unsafe-vbscript">
+<!-- case: url-unsafe-vbscript -->
+<p>x</p>
+</section>
+</body>
+</html>
