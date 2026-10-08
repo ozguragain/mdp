@@ -1,9 +1,8 @@
 package ast
 
 // RemapSpan maps a chunk-coordinate span to the parent space, given the
-// parent position of each chunk line's first byte. Byte columns make this
-// exact even for lines stripped of markers. Remapping composes: mapping into
-// an intermediate space and then again equals one mapping into the final one.
+// parent position of each chunk line's first byte. Byte columns keep this
+// exact even for lines stripped of markers.
 func RemapSpan(s Span, bases []Pos) Span {
 	return Span{Start: remapPos(s.Start, bases), End: remapPos(s.End, bases)}
 }
@@ -51,7 +50,23 @@ func RemapBlocks(blocks []BlockNode, bases []Pos) {
 		case *ListItemNode:
 			n.Span = RemapSpan(n.Span, bases)
 			RemapBlocks(n.Blocks, bases)
+		case *ThematicBreakNode:
+			n.Span = RemapSpan(n.Span, bases)
+		case *TableNode:
+			n.Span = RemapSpan(n.Span, bases)
+			remapCells(n.Header, bases)
+			for _, row := range n.Rows {
+				remapCells(row, bases)
+			}
 		}
+	}
+}
+
+// remapCells remaps one table row's cells and their inline content.
+func remapCells(cells []TableCellNode, bases []Pos) {
+	for i := range cells {
+		cells[i].Span = RemapSpan(cells[i].Span, bases)
+		RemapInlines(cells[i].Inlines, bases)
 	}
 }
 
@@ -72,6 +87,15 @@ func RemapInlines(inlines []InlineNode, bases []Pos) {
 		case *LinkNode:
 			n.Span = RemapSpan(n.Span, bases)
 			RemapInlines(n.Children, bases)
+		case *ImageNode:
+			n.Span = RemapSpan(n.Span, bases)
+		case *StrikethroughNode:
+			n.Span = RemapSpan(n.Span, bases)
+			RemapInlines(n.Children, bases)
+		case *HardBreakNode:
+			n.Span = RemapSpan(n.Span, bases)
+		case *AutolinkNode:
+			n.Span = RemapSpan(n.Span, bases)
 		}
 	}
 }

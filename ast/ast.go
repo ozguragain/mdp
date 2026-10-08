@@ -18,19 +18,17 @@ type Span struct {
 // BlockNode is the sealed interface for block-level nodes.
 type BlockNode interface {
 	blockNode()
-	SourceSpan() Span
 }
 
 // InlineNode is the sealed interface for inline nodes.
 type InlineNode interface {
 	inlineNode()
-	SourceSpan() Span
 }
 
-// DocumentNode is the root of a parsed markdown document.
+// DocumentNode is the root of a parsed markdown document. Frontmatter is
+// stripped before parsing and is not part of the tree.
 type DocumentNode struct {
 	Blocks []BlockNode
-	Span   Span // union of the block spans; zero when empty
 }
 
 // HeadingNode represents an ATX heading (`# ...` through `###### ...`).
@@ -61,8 +59,42 @@ type BlockquoteNode struct {
 
 // ListNode represents a list built from consecutive list items.
 type ListNode struct {
-	Items []*ListItemNode
-	Span  Span
+	Items   []*ListItemNode
+	Ordered bool // false for "-"/"*"/"+", true for "1."/"1)"
+	Start   int  // first marker's number; 1 for bullet lists
+	Span    Span
+}
+
+// ThematicBreakNode is a thematic break ("---", "***", "___").
+type ThematicBreakNode struct {
+	Span Span // the whole break line
+}
+
+// Align is a table column's horizontal alignment, taken from the delimiter row.
+type Align int
+
+const (
+	AlignNone   Align = iota // no ":" in the delimiter cell
+	AlignLeft                // ":---"
+	AlignCenter              // ":---:"
+	AlignRight               // "---:"
+)
+
+// TableCellNode is one table cell. It is structural, not a block or inline
+// node of its own.
+type TableCellNode struct {
+	Inlines []InlineNode
+	Span    Span
+}
+
+// TableNode is a GFM pipe table: one header row, a delimiter row that is
+// consumed (never part of the tree), then zero or more body rows. Every row
+// is padded or truncated to len(Alignments) columns.
+type TableNode struct {
+	Header     []TableCellNode
+	Alignments []Align
+	Rows       [][]TableCellNode
+	Span       Span // from the header row to the last body row
 }
 
 // ListItemNode represents a single list item (container).
@@ -105,28 +137,51 @@ type TextNode struct {
 	Span  Span
 }
 
+// ImageNode is an inline image `![alt](src "title")`. Alt is literal text —
+// the spec parses no markup inside it. Destination is always URL-sanitized:
+// an unsafe source never becomes an ImageNode.
+type ImageNode struct {
+	Alt         string // literal alt text
+	Destination string // raw destination as written
+	Title       string // optional; "" when absent
+	Span        Span   // from "![" to just past the closing ")"
+}
+
+// StrikethroughNode wraps inline children in `~~...~~`.
+type StrikethroughNode struct {
+	Children []InlineNode
+	Span     Span
+}
+
+// HardBreakNode is an explicit line break inside a block: two or more
+// trailing spaces, or a backslash, immediately before the newline.
+type HardBreakNode struct {
+	Span Span // covering the newline that produced the break
+}
+
+// AutolinkNode is `<https://example.com>` or `<user@example.com>`. The
+// destination is URL-sanitized like any other link.
+type AutolinkNode struct {
+	Destination string // the href; for emails this is "mailto:" + the text
+	Text        string // literal text shown to the reader
+	Span        Span   // including both angle brackets
+}
+
 func (*HeadingNode) blockNode()         {}
 func (*ParagraphNode) blockNode()       {}
 func (*FencedCodeBlockNode) blockNode() {}
 func (*BlockquoteNode) blockNode()      {}
 func (*ListNode) blockNode()            {}
 func (*ListItemNode) blockNode()        {}
+func (*ThematicBreakNode) blockNode()   {}
+func (*TableNode) blockNode()           {}
 
-func (*TextNode) inlineNode()     {}
-func (*EmphasisNode) inlineNode() {}
-func (*StrongNode) inlineNode()   {}
-func (*CodeNode) inlineNode()     {}
-func (*LinkNode) inlineNode()     {}
-
-func (n *DocumentNode) SourceSpan() Span        { return n.Span }
-func (n *HeadingNode) SourceSpan() Span         { return n.Span }
-func (n *ParagraphNode) SourceSpan() Span       { return n.Span }
-func (n *FencedCodeBlockNode) SourceSpan() Span { return n.Span }
-func (n *BlockquoteNode) SourceSpan() Span      { return n.Span }
-func (n *ListNode) SourceSpan() Span            { return n.Span }
-func (n *ListItemNode) SourceSpan() Span        { return n.Span }
-func (n *TextNode) SourceSpan() Span            { return n.Span }
-func (n *EmphasisNode) SourceSpan() Span        { return n.Span }
-func (n *StrongNode) SourceSpan() Span          { return n.Span }
-func (n *CodeNode) SourceSpan() Span            { return n.Span }
-func (n *LinkNode) SourceSpan() Span            { return n.Span }
+func (*TextNode) inlineNode()          {}
+func (*EmphasisNode) inlineNode()      {}
+func (*StrongNode) inlineNode()        {}
+func (*CodeNode) inlineNode()          {}
+func (*LinkNode) inlineNode()          {}
+func (*ImageNode) inlineNode()         {}
+func (*StrikethroughNode) inlineNode() {}
+func (*HardBreakNode) inlineNode()     {}
+func (*AutolinkNode) inlineNode()      {}

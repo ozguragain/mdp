@@ -4,7 +4,7 @@
 package diag
 
 import (
-	"fmt"
+	"strconv"
 
 	"github.com/ozguragain/mdp/ast"
 )
@@ -34,5 +34,6 @@ type Diagnostic struct {
 
 // String formats the diagnostic as "line:col: [kind] message".
 func (d Diagnostic) String() string {
-	return fmt.Sprintf("%d:%d: [%s] %s", d.Span.Start.Line, d.Span.Start.Column, d.Kind, d.Message)
+	return strconv.Itoa(d.Span.Start.Line) + ":" + strconv.Itoa(d.Span.Start.Column) +
+		": [" + string(d.Kind) + "] " + d.Message
 }

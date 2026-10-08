@@ -13,6 +13,22 @@ const (
 	TokenBlockquote TokenType = "BLOCKQUOTE"
 	TokenTextLine   TokenType = "TEXT_LINE"
 	TokenEOF        TokenType = "EOF"
+
+	// TokenThematicBreak: "---", "***" or "___" alone on its line.
+	TokenThematicBreak TokenType = "THEMATIC_BREAK"
+	// TokenOrderedListItem: "1." / "1)" followed by content. Meta holds the
+	// marker exactly as written ("1.", "42)").
+	TokenOrderedListItem TokenType = "ORDERED_LIST_ITEM"
+	// TokenFrontmatter: the whole leading "---" ... "---" block, consumed as
+	// one token so none of it reaches the block parser. Meta holds the raw
+	// YAML body. Emitted only by NewDocumentLexer.
+	TokenFrontmatter TokenType = "FRONTMATTER"
+	// TokenTableHeader / TokenTableDelimiter / TokenTableRow are the three
+	// lines of a GFM pipe table. Meta on the delimiter holds the raw line so
+	// the parser can read the column alignments.
+	TokenTableHeader    TokenType = "TABLE_HEADER"
+	TokenTableDelimiter TokenType = "TABLE_DELIMITER"
+	TokenTableRow       TokenType = "TABLE_ROW"
 )
 
 type Token struct {
