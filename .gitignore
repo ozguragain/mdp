@@ -44,7 +44,6 @@ dist/
 
 .DS_Store
 *.exe
-*.wasm
 bin/
 
 docs/
