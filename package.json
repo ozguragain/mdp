@@ -1,0 +1,35 @@
+{
+  "name": "mdp",
+  "version": "0.1.0",
+  "description": "Markdown to HTML compiler, built on the Go mdp toolchain. Build-time only: nothing here ships to the browser.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "bin/"
+  ],
+  "keywords": [
+    "markdown",
+    "compiler",
+    "html",
+    "static-site",
+    "nextjs"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ozguragain/mdp"
+  },
+  "license": "ISC"
+}

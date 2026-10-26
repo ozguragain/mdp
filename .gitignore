@@ -38,7 +38,9 @@ dist/
 
 .DS_Store
 *.exe
-bin/
+# Go build outputs, except the committed npm platform binaries
+bin/*
+!bin/mdp-*
 
 docs/
 ROADMAP.md
