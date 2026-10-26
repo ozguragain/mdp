@@ -28,15 +28,12 @@ func NewParser(tokens []lexer.Token) *Parser {
 }
 
 func (p *Parser) Parse() *ast.DocumentNode {
-	blocks := p.parseBlocks()
-	doc := &ast.DocumentNode{Blocks: blocks}
-	if len(blocks) > 0 {
-		doc.Span = ast.Span{
-			Start: blocks[0].SourceSpan().Start,
-			End:   blocks[len(blocks)-1].SourceSpan().End,
-		}
+	// Frontmatter is metadata, not content: consume and drop it. Container
+	// sub-parsers never see this token.
+	if p.currentToken().Type == lexer.TokenFrontmatter {
+		p.nextToken()
 	}
-	return doc
+	return &ast.DocumentNode{Blocks: p.parseBlocks()}
 }
 
 // Diagnostics reports what Parse recovered; parsing still succeeds.
@@ -73,8 +70,14 @@ func (p *Parser) parseBlocks() []ast.BlockNode {
 			blocks = append(blocks, p.parseFencedCode())
 		case lexer.TokenBlockquote:
 			blocks = append(blocks, p.parseBlockquote())
-		case lexer.TokenListItem:
+		case lexer.TokenListItem, lexer.TokenOrderedListItem:
 			blocks = append(blocks, p.parseList())
+		case lexer.TokenThematicBreak:
+			tok := p.currentToken()
+			p.nextToken()
+			blocks = append(blocks, &ast.ThematicBreakNode{Span: tok.Span})
+		case lexer.TokenTableHeader:
+			blocks = append(blocks, p.parseTable())
 		default:
 			// Unreachable with the current lexer; skip so the loop always
 			// makes progress.
@@ -180,9 +183,21 @@ func (p *Parser) parseBlockquote() *ast.BlockquoteNode {
 	return &ast.BlockquoteNode{Blocks: blocks, Span: span}
 }
 
+// parseList collects items of one kind. A bullet item and an ordered item
+// never share a list: the marker change closes the list and opens another.
 func (p *Parser) parseList() *ast.ListNode {
-	list := &ast.ListNode{}
-	for p.currentToken().Type == lexer.TokenListItem {
+	ordered := p.currentToken().Type == lexer.TokenOrderedListItem
+	want := lexer.TokenListItem
+	if ordered {
+		want = lexer.TokenOrderedListItem
+	}
+
+	list := &ast.ListNode{Ordered: ordered, Start: 1}
+	for p.currentToken().Type == want {
+		tok := p.currentToken()
+		if len(list.Items) == 0 && ordered {
+			list.Start = markerNumber(tok.Meta)
+		}
 		list.Items = append(list.Items, p.parseListItem())
 	}
 	list.Span = ast.Span{
@@ -192,6 +207,18 @@ func (p *Parser) parseList() *ast.ListNode {
 	return list
 }
 
+// markerNumber reads the number off an ordered list marker ("1." -> 1).
+func markerNumber(marker string) int {
+	n := 0
+	for i := 0; i < len(marker) && marker[i] >= '0' && marker[i] <= '9'; i++ {
+		n = n*10 + int(marker[i]-'0')
+	}
+	if n == 0 {
+		return 1
+	}
+	return n
+}
+
 // parseListItem absorbs following lines indented past the marker as item
 // content — wrapped text, nested blocks, and open fences alike.
 func (p *Parser) parseListItem() *ast.ListItemNode {
@@ -199,7 +226,12 @@ func (p *Parser) parseListItem() *ast.ListItemNode {
 	p.nextToken()
 
 	indent := leadingSpaces(tok.Literal)
-	content, start := itemContent(tok.Literal)
+	// A bullet marker is 2 bytes ("- "); an ordered marker is wider.
+	markerWidth := 2
+	if tok.Type == lexer.TokenOrderedListItem {
+		markerWidth = len(tok.Meta) + 1 // marker plus the space after it
+	}
+	content, start := itemContent(tok.Literal, markerWidth)
 
 	lines := []string{content}
 	bases := []ast.Pos{advance(tok.Span.Start, start)}
@@ -220,7 +252,7 @@ func (p *Parser) parseListItem() *ast.ListItemNode {
 		if next.Type == lexer.TokenCodeFence {
 			inFence = !inFence // open the item's fence, then close it
 		}
-		dedented, removed := dedent(next.Literal, indent+2)
+		dedented, removed := dedent(next.Literal, indent+markerWidth)
 		lines = append(lines, dedented)
 		bases = append(bases, advance(next.Span.Start, removed))
 		end = next.Span.End
@@ -246,6 +278,125 @@ func parseSource(src string, bases []ast.Pos, parent *Parser) []ast.BlockNode {
 		parent.diags = append(parent.diags, d)
 	}
 	return blocks
+}
+
+// parseTable builds a GFM pipe table: a header row, a delimiter row that is
+// consumed and turned into column alignments, then any body rows. The lexer
+// has already proved the delimiter row is real.
+func (p *Parser) parseTable() *ast.TableNode {
+	headerTok := p.currentToken()
+	p.nextToken()
+
+	delimTok := p.currentToken()
+	p.nextToken() // the delimiter row carries no content
+
+	aligns := parseAlignments(delimTok.Meta)
+	table := &ast.TableNode{Alignments: aligns}
+	table.Header = padCells(p.rowCells(headerTok), aligns)
+
+	end := headerTok.Span.End
+	for p.currentToken().Type == lexer.TokenTableRow {
+		tok := p.currentToken()
+		p.nextToken()
+		table.Rows = append(table.Rows, padCells(p.rowCells(tok), aligns))
+		end = tok.Span.End
+	}
+	table.Span = ast.Span{Start: headerTok.Span.Start, End: end}
+	return table
+}
+
+// parseAlignments reads the delimiter row's column alignments.
+func parseAlignments(line string) []ast.Align {
+	var aligns []ast.Align
+	for _, cell := range splitRowContent(line) {
+		c := cell.text
+		left := strings.HasPrefix(c, ":")
+		right := strings.HasSuffix(c, ":")
+		switch {
+		case left && right:
+			aligns = append(aligns, ast.AlignCenter)
+		case left:
+			aligns = append(aligns, ast.AlignLeft)
+		case right:
+			aligns = append(aligns, ast.AlignRight)
+		default:
+			aligns = append(aligns, ast.AlignNone)
+		}
+	}
+	return aligns
+}
+
+// padCells normalises a row to the delimiter's column count: short rows gain
+// empty cells, long rows lose their tail.
+func padCells(cells []ast.TableCellNode, aligns []ast.Align) []ast.TableCellNode {
+	for len(cells) < len(aligns) {
+		cells = append(cells, ast.TableCellNode{})
+	}
+	if len(cells) > len(aligns) {
+		cells = cells[:len(aligns)]
+	}
+	return cells
+}
+
+// rowCells splits one table row into cells, each span covering exactly the
+// cell's content with its padding spaces left out.
+func (p *Parser) rowCells(tok lexer.Token) []ast.TableCellNode {
+	var cells []ast.TableCellNode
+	for _, cp := range splitRowContent(tok.Literal) {
+		start := advance(tok.Span.Start, cp.start)
+		span := ast.Span{Start: start, End: advance(start, len(cp.text))}
+		cells = append(cells, ast.TableCellNode{
+			Inlines: textInlines(cp.text, span),
+			Span:    span,
+		})
+	}
+	return cells
+}
+
+// rowCell is one table cell's text and where that text starts in its line.
+type rowCell struct {
+	text  string
+	start int
+}
+
+// splitRowContent splits a raw table line on its pipes and reports each
+// cell's content with the offset of that content in the line. Whitespace
+// padding is trimmed, so the reported offset points at the content itself.
+func splitRowContent(line string) []rowCell {
+	lead := len(line) - len(strings.TrimLeftFunc(line, unicode.IsSpace))
+	s := line[lead:]
+	s = strings.TrimRightFunc(s, unicode.IsSpace)
+
+	i := 0
+	if strings.HasPrefix(s, "|") {
+		i = 1
+	}
+
+	var out []rowCell
+	for {
+		j := i
+		for j < len(s) && s[j] != '|' {
+			j++
+		}
+		raw := s[i:j]
+		begin := 0
+		for begin < len(raw) && raw[begin] == ' ' {
+			begin++
+		}
+		stop := len(raw)
+		for stop > begin && raw[stop-1] == ' ' {
+			stop--
+		}
+		out = append(out, rowCell{text: raw[begin:stop], start: lead + i + begin})
+
+		if j >= len(s) {
+			return out
+		}
+		i = j + 1
+		if i >= len(s) {
+			return out // the row ends with a pipe: no cell after it
+		}
+	}
 }
 
 // textInlines wraps raw text as one TextNode; package inline splits it
@@ -284,14 +435,14 @@ func stripQuoteMarker(line string) (content string, removed int) {
 	return content, lead + 1 + (len(after) - len(content))
 }
 
-// itemContent drops the "- " / "* " / "+ " marker and reports the bytes
-// dropped before the content.
-func itemContent(line string) (content string, removed int) {
+// itemContent drops the list marker and reports the bytes dropped before the
+// content, so the content's span lands on its real column.
+func itemContent(line string, markerWidth int) (content string, removed int) {
 	lead := len(line) - len(strings.TrimLeftFunc(line, unicode.IsSpace))
-	after := strings.TrimSpace(line)[2:] // drop the marker
+	after := strings.TrimSpace(line)[markerWidth:] // drop the marker
 	content = strings.TrimSpace(after)
 	extra := len(after) - len(strings.TrimLeftFunc(after, unicode.IsSpace))
-	return content, lead + 2 + extra
+	return content, lead + markerWidth + extra
 }
 
 func leadingSpaces(s string) int {

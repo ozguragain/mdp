@@ -4,7 +4,7 @@
 package inline
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -13,9 +13,9 @@ import (
 	"github.com/ozguragain/mdp/diag"
 )
 
-// Parse splits raw inline text into nodes and diagnostics. Spans are
+// parseInline splits raw inline text into nodes and diagnostics. Spans are
 // relative to text; inline.Process remaps them onto the document.
-func Parse(text string) ([]ast.InlineNode, []diag.Diagnostic) {
+func parseInline(text string) ([]ast.InlineNode, []diag.Diagnostic) {
 	p := &inlineParser{}
 	nodes := p.parse(text, mapperFor(text, ast.Pos{Offset: 0, Line: 1, Column: 1}), false)
 	return nodes, p.diags
@@ -44,7 +44,19 @@ func processBlocks(blocks []ast.BlockNode, diags *[]diag.Diagnostic) {
 			}
 		case *ast.ListItemNode:
 			processBlocks(n.Blocks, diags)
+		case *ast.TableNode:
+			processCells(n.Header, diags)
+			for _, row := range n.Rows {
+				processCells(row, diags)
+			}
 		}
+	}
+}
+
+// processCells runs the inline phase over one table row's cells.
+func processCells(cells []ast.TableCellNode, diags *[]diag.Diagnostic) {
+	for i := range cells {
+		cells[i].Inlines = processInlines(cells[i].Inlines, diags)
 	}
 }
 
@@ -62,7 +74,7 @@ func processInlines(inlines []ast.InlineNode, diags *[]diag.Diagnostic) []ast.In
 		parts = append(parts, t.Value)
 		bases = append(bases, t.Span.Start)
 	}
-	nodes, ds := Parse(strings.Join(parts, "\n"))
+	nodes, ds := parseInline(strings.Join(parts, "\n"))
 	ast.RemapInlines(nodes, bases)
 	for _, d := range ds {
 		d.Span = ast.RemapSpan(d.Span, bases)
@@ -127,35 +139,42 @@ type inlineParser struct {
 // wins, with recursive content. noLinks suppresses link syntax in labels.
 func (p *inlineParser) parse(s string, m spanMapper, noLinks bool) []ast.InlineNode {
 	var nodes []ast.InlineNode
-	var buf strings.Builder
+	var buf []byte
 	textStart := 0
 
 	flush := func(end int) {
-		if buf.Len() > 0 {
-			nodes = append(nodes, &ast.TextNode{Value: buf.String(), Span: m.span(textStart, end)})
-			buf.Reset()
+		if len(buf) > 0 {
+			nodes = append(nodes, &ast.TextNode{Value: string(buf), Span: m.span(textStart, end)})
+			buf = buf[:0]
 		}
 	}
 	appendText := func(start, end int) {
-		if buf.Len() == 0 {
+		if len(buf) == 0 {
 			textStart = start
 		}
-		buf.WriteString(s[start:end])
+		buf = append(buf, s[start:end]...)
 	}
 
 	i := 0
 	for i < len(s) {
 		switch c := s[i]; c {
 		case '\\':
-			if buf.Len() == 0 {
-				textStart = i
-			}
-			if i+1 < len(s) && isASCIIPunct(s[i+1]) {
-				buf.WriteByte(s[i+1])
+			// A backslash at the end of a line is a hard break, not an escape.
+			if i+1 < len(s) && s[i+1] == '\n' {
+				flush(i)
+				nodes = append(nodes, &ast.HardBreakNode{Span: m.span(i, i+2)})
 				i += 2
 				continue
 			}
-			buf.WriteByte('\\')
+			if len(buf) == 0 {
+				textStart = i
+			}
+			if i+1 < len(s) && isASCIIPunct(s[i+1]) {
+				buf = append(buf, s[i+1])
+				i += 2
+				continue
+			}
+			buf = append(buf, '\\')
 			i++
 		case '`':
 			n := backtickRunAt(s, i)
@@ -170,11 +189,41 @@ func (p *inlineParser) parse(s string, m spanMapper, noLinks bool) []ast.InlineN
 			}
 			p.diags = append(p.diags, diag.Diagnostic{
 				Kind:    diag.UnclosedCodeSpan,
-				Message: fmt.Sprintf("code span opened with %q is never closed; kept as literal text", strings.Repeat("`", n)),
+				Message: "code span opened with " + strconv.Quote(strings.Repeat("`", n)) + " is never closed; kept as literal text",
 				Span:    m.span(i, i+n),
 			})
 			appendText(i, i+n)
 			i += n
+		case '!':
+			// An image label is allowed inside a link label: <img> inside <a>
+			// is valid HTML, unlike a nested link.
+			if i+1 < len(s) && s[i+1] == '[' {
+				lm := matchLink(s, i+1)
+				if lm.ok {
+					alt := s[lm.labelStart:lm.labelEnd]
+					if isSafeURL(lm.dest) {
+						flush(i)
+						nodes = append(nodes, &ast.ImageNode{
+							Alt:         alt,
+							Destination: lm.dest,
+							Title:       lm.title,
+							Span:        m.span(i, lm.next),
+						})
+					} else {
+						p.diags = append(p.diags, diag.Diagnostic{
+							Kind:    diag.UnsafeURL,
+							Message: "dropped img src with unsafe URL " + strconv.Quote(lm.dest) + "; alt text is kept",
+							Span:    m.span(i, lm.next),
+						})
+						flush(i)
+						appendText(lm.labelStart, lm.labelEnd)
+					}
+					i = lm.next
+					continue
+				}
+			}
+			appendText(i, i+1)
+			i++
 		case '[':
 			if !noLinks {
 				lm := matchLink(s, i)
@@ -192,7 +241,7 @@ func (p *inlineParser) parse(s string, m spanMapper, noLinks bool) []ast.InlineN
 						// Unsafe URL: no <a> at all, only the label content.
 						p.diags = append(p.diags, diag.Diagnostic{
 							Kind:    diag.UnsafeURL,
-							Message: fmt.Sprintf("dropped href with unsafe URL %q; link label is kept", lm.dest),
+							Message: "dropped href with unsafe URL " + strconv.Quote(lm.dest) + "; link label is kept",
 							Span:    m.span(i, lm.next),
 						})
 						flush(i)
@@ -209,10 +258,10 @@ func (p *inlineParser) parse(s string, m spanMapper, noLinks bool) []ast.InlineN
 					})
 				}
 			}
-			buf.WriteByte('[')
-			if buf.Len() == 1 {
+			if len(buf) == 0 {
 				textStart = i
 			}
+			buf = append(buf, '[')
 			i++
 		case '*', '_':
 			n := runLenAt(s, i, c)
@@ -226,12 +275,72 @@ func (p *inlineParser) parse(s string, m spanMapper, noLinks bool) []ast.InlineN
 				}
 				p.diags = append(p.diags, diag.Diagnostic{
 					Kind:    diag.UnmatchedDelimiter,
-					Message: fmt.Sprintf("unmatched %q emphasis delimiter; kept as literal text", strings.Repeat(string(c), n)),
+					Message: "unmatched " + strconv.Quote(strings.Repeat(string(c), n)) + " emphasis delimiter; kept as literal text",
 					Span:    m.span(i, i+n),
 				})
 			}
 			appendText(i, i+n)
 			i += n
+		case '~':
+			// Only a run of exactly two tildes strikes through; a single one
+			// or a longer run is literal text.
+			if n := runLenAt(s, i, '~'); n == 2 {
+				if close := findTildeClose(s, i+2); close >= 0 {
+					flush(i)
+					children := p.parse(s[i+2:close], m.sub(i+2), noLinks)
+					nodes = append(nodes, &ast.StrikethroughNode{Children: children, Span: m.span(i, close+2)})
+					i = close + 2
+					continue
+				}
+			} else {
+				appendText(i, i+n)
+				i += n
+				continue
+			}
+			appendText(i, i+2)
+			i += 2
+		case '<':
+			if end := autolinkBodyEnd(s, i); end > 0 {
+				inner := s[i+1 : end]
+				dest, text := autolinkTarget(inner)
+				if isSafeURL(dest) {
+					flush(i)
+					nodes = append(nodes, &ast.AutolinkNode{
+						Destination: dest,
+						Text:        text,
+						Span:        m.span(i, end+1),
+					})
+				} else {
+					p.diags = append(p.diags, diag.Diagnostic{
+						Kind:    diag.UnsafeURL,
+						Message: "dropped href with unsafe URL " + strconv.Quote(dest) + "; link label is kept",
+						Span:    m.span(i, end+1),
+					})
+					flush(i)
+					appendText(i+1, end)
+				}
+				i = end + 1
+				continue
+			}
+			appendText(i, i+1)
+			i++
+		case '\n':
+			// Two or more spaces before the newline make a hard break; the
+			// spaces themselves are syntax and never reach the output.
+			spaces := 0
+			for k := len(buf) - 1; k >= 0 && buf[k] == ' '; k-- {
+				spaces++
+			}
+			if spaces >= 2 {
+				end := i - spaces
+				buf = buf[:len(buf)-spaces]
+				flush(end)
+				nodes = append(nodes, &ast.HardBreakNode{Span: m.span(i, i+1)})
+				i++
+				continue
+			}
+			appendText(i, i+1)
+			i++
 		default:
 			appendText(i, i+1)
 			i++
@@ -253,6 +362,61 @@ func wrapEmphasis(n int, children []ast.InlineNode, whole, inner ast.Span) ast.I
 		strong := &ast.StrongNode{Children: children, Span: inner}
 		return &ast.EmphasisNode{Children: []ast.InlineNode{strong}, Span: whole}
 	}
+}
+
+// findTildeClose finds the closing "~~" of a strikethrough opened at start.
+// A tilde run longer than two is not a closer.
+func findTildeClose(s string, start int) int {
+	for i := start; i+1 < len(s); i++ {
+		if s[i] != '~' || s[i+1] != '~' {
+			continue
+		}
+		if i+2 < len(s) && s[i+2] == '~' {
+			continue // part of a longer run
+		}
+		return i
+	}
+	return -1
+}
+
+// autolinkBodyEnd reports the index of the ">" closing an autolink opened at
+// i, or -1 when s[i] opens no autolink. The body may hold no whitespace and
+// no angle bracket, and must be a URI or an email address.
+func autolinkBodyEnd(s string, i int) int {
+	j := i + 1
+	for ; j < len(s); j++ {
+		switch s[j] {
+		case '>':
+			if j == i+1 || !isAutolinkBody(s[i+1:j]) {
+				return -1
+			}
+			return j
+		case ' ', '\t', '\n', '<':
+			return -1
+		}
+	}
+	return -1 // never closed
+}
+
+// isAutolinkBody reports whether text between < and > is a URI (a scheme
+// followed by ":") or an email address. Anything else is not a link.
+func isAutolinkBody(inner string) bool {
+	if colon := strings.IndexByte(inner, ':'); colon > 0 {
+		return isSchemeName(inner[:colon])
+	}
+	at := strings.IndexByte(inner, '@')
+	return at > 0 &&
+		strings.IndexByte(inner[at+1:], '@') < 0 &&
+		strings.Contains(inner[at+1:], ".")
+}
+
+// autolinkTarget splits an autolink body into its href and its visible text.
+// An email address links to mailto:.
+func autolinkTarget(inner string) (dest, text string) {
+	if strings.IndexByte(inner, '@') > 0 && !strings.Contains(inner, ":") {
+		return "mailto:" + inner, inner
+	}
+	return inner, inner
 }
 
 type linkMatch struct {

@@ -6,6 +6,26 @@
 </head>
 <body>
 <!-- Deterministic: one section per executed case, sorted by case id; no timestamps, no absolute paths. -->
+<section data-case="autolink-email">
+<!-- case: autolink-email -->
+<p><a href="mailto:user@example.com">user@example.com</a></p>
+</section>
+<section data-case="autolink-plain-angle-text-is-literal">
+<!-- case: autolink-plain-angle-text-is-literal -->
+<p>&lt;foo&gt;</p>
+</section>
+<section data-case="autolink-unclosed-is-literal">
+<!-- case: autolink-unclosed-is-literal -->
+<p>&lt;https://example.com</p>
+</section>
+<section data-case="autolink-unsafe-scheme-keeps-text">
+<!-- case: autolink-unsafe-scheme-keeps-text -->
+<p>javascript:alert(1)</p>
+</section>
+<section data-case="autolink-uri">
+<!-- case: autolink-uri -->
+<p><a href="https://example.com/a">https://example.com/a</a></p>
+</section>
 <section data-case="block-atx-basic">
 <!-- case: block-atx-basic -->
 <h1>H1</h1>
@@ -260,6 +280,78 @@ more
 <p>alpha</p>
 <p>see x</p>
 </section>
+<section data-case="frontmatter-body-only">
+<!-- case: frontmatter-body-only -->
+<p>body</p>
+</section>
+<section data-case="frontmatter-closed-by-dots">
+<!-- case: frontmatter-closed-by-dots -->
+<p>body</p>
+</section>
+<section data-case="frontmatter-empty-body">
+<!-- case: frontmatter-empty-body -->
+<p>body</p>
+</section>
+<section data-case="frontmatter-is-not-rendered">
+<!-- case: frontmatter-is-not-rendered -->
+<h1>H</h1>
+</section>
+<section data-case="frontmatter-only-at-start-of-document">
+<!-- case: frontmatter-only-at-start-of-document -->
+<p>x</p>
+<hr>
+<p>title: y</p>
+<hr>
+</section>
+<section data-case="frontmatter-unclosed-is-thematic-break">
+<!-- case: frontmatter-unclosed-is-thematic-break -->
+<hr>
+<p>title: x</p>
+</section>
+<section data-case="hardbreak-backslash">
+<!-- case: hardbreak-backslash -->
+<p>one<br>
+two</p>
+</section>
+<section data-case="hardbreak-single-space-stays-soft">
+<!-- case: hardbreak-single-space-stays-soft -->
+<p>one 
+two</p>
+</section>
+<section data-case="hardbreak-three-spaces">
+<!-- case: hardbreak-three-spaces -->
+<p>a<br>
+b</p>
+</section>
+<section data-case="hardbreak-trailing-spaces">
+<!-- case: hardbreak-trailing-spaces -->
+<p>one<br>
+two</p>
+</section>
+<section data-case="image-alt-is-literal-text">
+<!-- case: image-alt-is-literal-text -->
+<p><img src="/x.png" alt="a *b*"></p>
+</section>
+<section data-case="image-basic">
+<!-- case: image-basic -->
+<p><img src="/x.png" alt="alt"></p>
+</section>
+<section data-case="image-empty-alt">
+<!-- case: image-empty-alt -->
+<p><img src="/x.png" alt=""></p>
+</section>
+<section data-case="image-in-paragraph">
+<!-- case: image-in-paragraph -->
+<p>before <img src="/p.jpg" alt="a"> after</p>
+</section>
+<section data-case="image-title">
+<!-- case: image-title -->
+<p><img src="/x.png" alt="alt" title="title"></p>
+</section>
+<section data-case="image-unsafe-src-keeps-alt-text">
+<!-- case: image-unsafe-src-keeps-alt-text -->
+<p>x</p>
+</section>
 <section data-case="inline-em-asterisk">
 <!-- case: inline-em-asterisk -->
 <p><em>em</em></p>
@@ -352,6 +444,47 @@ more
 <!-- case: link-title -->
 <p><a href="/u" title="T">t</a></p>
 </section>
+<section data-case="ordered-basic">
+<!-- case: ordered-basic -->
+<ol>
+<li>one</li>
+<li>two</li>
+</ol>
+</section>
+<section data-case="ordered-continuation-line">
+<!-- case: ordered-continuation-line -->
+<ol>
+<li>one
+continued</li>
+<li>two</li>
+</ol>
+</section>
+<section data-case="ordered-digits-without-marker-are-text">
+<!-- case: ordered-digits-without-marker-are-text -->
+<p>1.no-space</p>
+</section>
+<section data-case="ordered-marker-change-ends-the-list">
+<!-- case: ordered-marker-change-ends-the-list -->
+<ol>
+<li>one</li>
+</ol>
+<ul>
+<li>two</li>
+</ul>
+</section>
+<section data-case="ordered-paren-marker">
+<!-- case: ordered-paren-marker -->
+<ol>
+<li>one</li>
+</ol>
+</section>
+<section data-case="ordered-start-keeps-its-number">
+<!-- case: ordered-start-keeps-its-number -->
+<ol start="3">
+<li>three</li>
+<li>four</li>
+</ol>
+</section>
 <section data-case="plain-document-golden">
 <!-- case: plain-document-golden -->
 <p>This is plain text with no markup.</p>
@@ -365,6 +498,135 @@ Line two of the second paragraph.</p>
 <section data-case="plain-text-escaped">
 <!-- case: plain-text-escaped -->
 <p>a &lt; b &gt; c &amp; d &#34;e&#34;</p>
+</section>
+<section data-case="strike-basic">
+<!-- case: strike-basic -->
+<p><del>gone</del></p>
+</section>
+<section data-case="strike-holds-other-inline">
+<!-- case: strike-holds-other-inline -->
+<p><del>a <strong>b</strong> c</del></p>
+</section>
+<section data-case="strike-single-tilde-literal">
+<!-- case: strike-single-tilde-literal -->
+<p>~x~</p>
+</section>
+<section data-case="strike-triple-tilde-literal">
+<!-- case: strike-triple-tilde-literal -->
+<p>~~~x~~~</p>
+</section>
+<section data-case="strike-unclosed-literal">
+<!-- case: strike-unclosed-literal -->
+<p>~~open</p>
+</section>
+<section data-case="table-basic">
+<!-- case: table-basic -->
+<table>
+<thead>
+<tr>
+<th>a</th>
+<th>b</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section data-case="table-cells-parse-inline">
+<!-- case: table-cells-parse-inline -->
+<table>
+<thead>
+<tr>
+<th><em>a</em></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>b</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section data-case="table-column-alignment">
+<!-- case: table-column-alignment -->
+<table>
+<thead>
+<tr>
+<th align="left">l</th>
+<th align="center">c</th>
+<th align="right">r</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">1</td>
+<td align="center">2</td>
+<td align="right">3</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section data-case="table-header-only-has-no-tbody">
+<!-- case: table-header-only-has-no-tbody -->
+<table>
+<thead>
+<tr>
+<th>a</th>
+</tr>
+</thead>
+</table>
+</section>
+<section data-case="table-short-row-is-padded">
+<!-- case: table-short-row-is-padded -->
+<table>
+<thead>
+<tr>
+<th>a</th>
+<th>b</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section data-case="table-without-delimiter-row-stays-text">
+<!-- case: table-without-delimiter-row-stays-text -->
+<p>a | b
+more</p>
+</section>
+<section data-case="thematic-break-dashes">
+<!-- case: thematic-break-dashes -->
+<p>a</p>
+<hr>
+<p>b</p>
+</section>
+<section data-case="thematic-break-four-runs">
+<!-- case: thematic-break-four-runs -->
+<hr>
+</section>
+<section data-case="thematic-break-spaced-dashes">
+<!-- case: thematic-break-spaced-dashes -->
+<hr>
+</section>
+<section data-case="thematic-break-stars">
+<!-- case: thematic-break-stars -->
+<hr>
+</section>
+<section data-case="thematic-break-two-dashes-are-text">
+<!-- case: thematic-break-two-dashes-are-text -->
+<p>--</p>
+</section>
+<section data-case="thematic-break-underscores">
+<!-- case: thematic-break-underscores -->
+<hr>
 </section>
 <section data-case="url-href-ampersand-escaped">
 <!-- case: url-href-ampersand-escaped -->

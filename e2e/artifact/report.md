@@ -5,6 +5,11 @@ The "expected output" cell holds the expected stdout followed by `stderr: ...` l
 
 | case id | input | expected output | result |
 | --- | --- | --- | --- |
+| autolink-email | <user@example.com> | <p><a href="mailto:user@example.com">user@example.com</a></p>\n | PASS |
+| autolink-plain-angle-text-is-literal | <foo> | <p>&lt;foo&gt;</p>\n | PASS |
+| autolink-unclosed-is-literal | <https://example.com | <p>&lt;https://example.com</p>\n | PASS |
+| autolink-unsafe-scheme-keeps-text | <javascript:alert(1)> | <p>javascript:alert(1)</p>\nstderr: mdp: 1:1: [unsafe-url] dropped href with unsafe URL "javascript:alert(1)"; link label is kept\n | PASS |
+| autolink-uri | <https://example.com/a> | <p><a href="https://example.com/a">https://example.com/a</a></p>\n | PASS |
 | block-atx-basic | # H1 | <h1>H1</h1>\n | PASS |
 | block-atx-closing-hashes | ## H2 ## | <h2>H2</h2>\n | PASS |
 | block-atx-empty-hash-literal | # | <p>#</p>\n | PASS |
@@ -47,6 +52,22 @@ The "expected output" cell holds the expected stdout followed by `stderr: ...` l
 | diag-unresolved-link-position | alpha\n\nsee [a](/b | <p>alpha</p>\n<p>see [a](/b</p>\nstderr: mdp: 3:5: [unresolved-link] could not parse link destination; kept as literal text\n | PASS |
 | diag-unsafe-url-in-list-item | ok line\n\n> `unclosed\n\n- [x](javascript:alert(1))\n\n**unmatched at line 7 | <p>ok line</p>\n<blockquote>\n<p>`unclosed</p>\n</blockquote>\n<ul>\n<li>x</li>\n</ul>\n<p>**unmatched at line 7</p>\nstderr: mdp: 3:3: [unclosed-code-span] code span opened with "`" is never closed; kept as literal text\nstderr: mdp: 5:3: [unsafe-url] dropped href with unsafe URL "javascript:alert(1)"; link label is kept\nstderr: mdp: 7:1: [unmatched-delimiter] unmatched "**" emphasis delimiter; kept as literal text\n | PASS |
 | diag-unsafe-url-position | alpha\n\nsee [x](javascript:alert(1)) | <p>alpha</p>\n<p>see x</p>\nstderr: mdp: 3:5: [unsafe-url] dropped href with unsafe URL "javascript:alert(1)"; link label is kept\n | PASS |
+| frontmatter-body-only | ---\ntitle: x\n---\nbody | <p>body</p>\n | PASS |
+| frontmatter-closed-by-dots | ---\ntitle: x\n...\n\nbody | <p>body</p>\n | PASS |
+| frontmatter-empty-body | ---\n---\nbody | <p>body</p>\n | PASS |
+| frontmatter-is-not-rendered | ---\ntitle: x\n---\n\n# H | <h1>H</h1>\n | PASS |
+| frontmatter-only-at-start-of-document | x\n\n---\ntitle: y\n--- | <p>x</p>\n<hr>\n<p>title: y</p>\n<hr>\n | PASS |
+| frontmatter-unclosed-is-thematic-break | ---\ntitle: x | <hr>\n<p>title: x</p>\n | PASS |
+| hardbreak-backslash | one\\\ntwo | <p>one<br>\ntwo</p>\n | PASS |
+| hardbreak-single-space-stays-soft | one \ntwo | <p>one \ntwo</p>\n | PASS |
+| hardbreak-three-spaces | a   \nb | <p>a<br>\nb</p>\n | PASS |
+| hardbreak-trailing-spaces | one  \ntwo | <p>one<br>\ntwo</p>\n | PASS |
+| image-alt-is-literal-text | ![a *b*](/x.png) | <p><img src="/x.png" alt="a *b*"></p>\n | PASS |
+| image-basic | ![alt](/x.png) | <p><img src="/x.png" alt="alt"></p>\n | PASS |
+| image-empty-alt | ![](/x.png) | <p><img src="/x.png" alt=""></p>\n | PASS |
+| image-in-paragraph | before ![a](/p.jpg) after | <p>before <img src="/p.jpg" alt="a"> after</p>\n | PASS |
+| image-title | ![alt](/x.png "title") | <p><img src="/x.png" alt="alt" title="title"></p>\n | PASS |
+| image-unsafe-src-keeps-alt-text | ![x](javascript:alert(1)) | <p>x</p>\nstderr: mdp: 1:1: [unsafe-url] dropped img src with unsafe URL "javascript:alert(1)"; alt text is kept\n | PASS |
 | inline-em-asterisk | *em* | <p><em>em</em></p>\n | PASS |
 | inline-em-strong-triple-run | ***x*** | <p><em><strong>x</strong></em></p>\n | PASS |
 | inline-em-underscore | _em_ | <p><em>em</em></p>\n | PASS |
@@ -70,9 +91,32 @@ The "expected output" cell holds the expected stdout followed by `stderr: ...` l
 | link-nested-link-suppressed | [a [b](/c) d](/e) | <p><a href="/e">a [b](/c) d</a></p>\n | PASS |
 | link-nested-markup-label | [*t*](/u) | <p><a href="/u"><em>t</em></a></p>\n | PASS |
 | link-title | [t](/u "T") | <p><a href="/u" title="T">t</a></p>\n | PASS |
+| ordered-basic | 1. one\n2. two | <ol>\n<li>one</li>\n<li>two</li>\n</ol>\n | PASS |
+| ordered-continuation-line | 1. one\n   continued\n2. two | <ol>\n<li>one\ncontinued</li>\n<li>two</li>\n</ol>\n | PASS |
+| ordered-digits-without-marker-are-text | 1.no-space | <p>1.no-space</p>\n | PASS |
+| ordered-marker-change-ends-the-list | 1. one\n- two | <ol>\n<li>one</li>\n</ol>\n<ul>\n<li>two</li>\n</ul>\n | PASS |
+| ordered-paren-marker | 1) one | <ol>\n<li>one</li>\n</ol>\n | PASS |
+| ordered-start-keeps-its-number | 3. three\n4. four | <ol start="3">\n<li>three</li>\n<li>four</li>\n</ol>\n | PASS |
 | plain-document-golden | This is plain text with no markup.\n\nA second paragraph with punctuation, (parentheses) and [brackets].\nLine two of the second paragraph. | <p>This is plain text with no markup.</p>\n<p>A second paragraph with punctuation, (parentheses) and [brackets].\nLine two of the second paragraph.</p>\n | PASS |
 | plain-short-line | Hello, world. | <p>Hello, world.</p>\n | PASS |
 | plain-text-escaped | a < b > c & d "e" | <p>a &lt; b &gt; c &amp; d &#34;e&#34;</p>\n | PASS |
+| strike-basic | ~~gone~~ | <p><del>gone</del></p>\n | PASS |
+| strike-holds-other-inline | ~~a **b** c~~ | <p><del>a <strong>b</strong> c</del></p>\n | PASS |
+| strike-single-tilde-literal | ~x~ | <p>~x~</p>\n | PASS |
+| strike-triple-tilde-literal | ~~~x~~~ | <p>~~~x~~~</p>\n | PASS |
+| strike-unclosed-literal | ~~open | <p>~~open</p>\n | PASS |
+| table-basic | \| a \| b \|\n\| --- \| --- \|\n\| 1 \| 2 \| | <table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>1</td>\n<td>2</td>\n</tr>\n</tbody>\n</table>\n | PASS |
+| table-cells-parse-inline | \| *a* \|\n\| --- \|\n\| `b` \| | <table>\n<thead>\n<tr>\n<th><em>a</em></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><code>b</code></td>\n</tr>\n</tbody>\n</table>\n | PASS |
+| table-column-alignment | \| l \| c \| r \|\n\| :-- \| :-: \| --: \|\n\| 1 \| 2 \| 3 \| | <table>\n<thead>\n<tr>\n<th align="left">l</th>\n<th align="center">c</th>\n<th align="right">r</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td align="left">1</td>\n<td align="center">2</td>\n<td align="right">3</td>\n</tr>\n</tbody>\n</table>\n | PASS |
+| table-header-only-has-no-tbody | \| a \|\n\| --- \| | <table>\n<thead>\n<tr>\n<th>a</th>\n</tr>\n</thead>\n</table>\n | PASS |
+| table-short-row-is-padded | \| a \| b \|\n\| --- \| --- \|\n\| 1 \| | <table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>1</td>\n<td></td>\n</tr>\n</tbody>\n</table>\n | PASS |
+| table-without-delimiter-row-stays-text | a \| b\nmore | <p>a \| b\nmore</p>\n | PASS |
+| thematic-break-dashes | a\n\n---\n\nb | <p>a</p>\n<hr>\n<p>b</p>\n | PASS |
+| thematic-break-four-runs | ---- | <hr>\n | PASS |
+| thematic-break-spaced-dashes | - - - | <hr>\n | PASS |
+| thematic-break-stars | *** | <hr>\n | PASS |
+| thematic-break-two-dashes-are-text | -- | <p>--</p>\n | PASS |
+| thematic-break-underscores | ___ | <hr>\n | PASS |
 | url-href-ampersand-escaped | [a](https://e.com/x?y=1&z=2) | <p><a href="https://e.com/x?y=1&amp;z=2">a</a></p>\n | PASS |
 | url-href-quote-escaped | [x](/a"b) | <p><a href="/a&#34;b">x</a></p>\n | PASS |
 | url-safe-fragment | [e](#frag) | <p><a href="#frag">e</a></p>\n | PASS |

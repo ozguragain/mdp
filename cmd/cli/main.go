@@ -7,7 +7,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"sort"
@@ -21,11 +20,11 @@ import (
 func main() {
 	input, err := readInput()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "mdp:", err)
+		os.Stderr.WriteString("mdp: " + err.Error() + "\n")
 		os.Exit(1)
 	}
 
-	tokens := lexer.NewLexer(string(input)).Tokenize()
+	tokens := lexer.NewDocumentLexer(string(input)).Tokenize()
 	p := parser.NewParser(tokens)
 	doc := p.Parse()
 	diags := p.Diagnostics()
@@ -34,9 +33,9 @@ func main() {
 		return diags[i].Span.Start.Offset < diags[j].Span.Start.Offset
 	})
 	for _, d := range diags {
-		fmt.Fprintf(os.Stderr, "mdp: %s\n", d)
+		os.Stderr.WriteString("mdp: " + d.String() + "\n")
 	}
-	fmt.Print(codegen.RenderHTML(doc))
+	io.WriteString(os.Stdout, codegen.RenderHTML(doc))
 }
 
 func readInput() ([]byte, error) {

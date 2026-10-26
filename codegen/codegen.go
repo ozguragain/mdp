@@ -2,8 +2,8 @@
 package codegen
 
 import (
-	"fmt"
 	"html"
+	"strconv"
 	"strings"
 
 	"github.com/ozguragain/mdp/ast"
@@ -26,9 +26,14 @@ func renderBlocks(b *strings.Builder, blocks []ast.BlockNode) {
 func renderBlock(b *strings.Builder, block ast.BlockNode) {
 	switch n := block.(type) {
 	case *ast.HeadingNode:
-		fmt.Fprintf(b, "<h%d>%s</h%d>\n", n.Level, renderInlines(n.Inlines), n.Level)
+		level := strconv.Itoa(n.Level)
+		b.WriteString("<h" + level + ">")
+		b.WriteString(renderInlines(n.Inlines))
+		b.WriteString("</h" + level + ">\n")
 	case *ast.ParagraphNode:
-		fmt.Fprintf(b, "<p>%s</p>\n", renderInlines(n.Inlines))
+		b.WriteString("<p>")
+		b.WriteString(renderInlines(n.Inlines))
+		b.WriteString("</p>\n")
 	case *ast.FencedCodeBlockNode:
 		renderCodeBlock(b, n)
 	case *ast.BlockquoteNode:
@@ -36,12 +41,72 @@ func renderBlock(b *strings.Builder, block ast.BlockNode) {
 		renderBlocks(b, n.Blocks)
 		b.WriteString("</blockquote>\n")
 	case *ast.ListNode:
-		b.WriteString("<ul>\n")
+		if n.Ordered {
+			if n.Start != 1 {
+				b.WriteString("<ol start=\"" + strconv.Itoa(n.Start) + "\">\n")
+			} else {
+				b.WriteString("<ol>\n")
+			}
+		} else {
+			b.WriteString("<ul>\n")
+		}
 		for _, item := range n.Items {
 			renderListItem(b, item)
 		}
-		b.WriteString("</ul>\n")
+		if n.Ordered {
+			b.WriteString("</ol>\n")
+		} else {
+			b.WriteString("</ul>\n")
+		}
+	case *ast.ThematicBreakNode:
+		b.WriteString("<hr>\n")
+	case *ast.TableNode:
+		renderTable(b, n)
 	}
+}
+
+// renderTable writes one <table>: a <thead> holding the header row, then a
+// <tbody> holding the body rows. Empty rows are omitted entirely.
+func renderTable(b *strings.Builder, n *ast.TableNode) {
+	b.WriteString("<table>\n<thead>\n<tr>\n")
+	for i, cell := range n.Header {
+		writeCell(b, "th", cell, n.Alignments, i)
+	}
+	b.WriteString("</tr>\n</thead>\n")
+	if len(n.Rows) > 0 {
+		b.WriteString("<tbody>\n")
+		for _, row := range n.Rows {
+			b.WriteString("<tr>\n")
+			for i, cell := range row {
+				writeCell(b, "td", cell, n.Alignments, i)
+			}
+			b.WriteString("</tr>\n")
+		}
+		b.WriteString("</tbody>\n")
+	}
+	b.WriteString("</table>\n")
+}
+
+// writeCell writes one <th>/<td>, adding align= when the delimiter row asked
+// for a specific alignment on that column.
+func writeCell(b *strings.Builder, tag string, cell ast.TableCellNode, aligns []ast.Align, col int) {
+	b.WriteString("<")
+	b.WriteString(tag)
+	if col < len(aligns) {
+		switch aligns[col] {
+		case ast.AlignLeft:
+			b.WriteString(" align=\"left\"")
+		case ast.AlignCenter:
+			b.WriteString(" align=\"center\"")
+		case ast.AlignRight:
+			b.WriteString(" align=\"right\"")
+		}
+	}
+	b.WriteString(">")
+	b.WriteString(renderInlines(cell.Inlines))
+	b.WriteString("</")
+	b.WriteString(tag)
+	b.WriteString(">\n")
 }
 
 // renderInlines renders a block's inline nodes back to back (soft breaks
@@ -73,19 +138,33 @@ func renderInline(b *strings.Builder, node ast.InlineNode) {
 		b.WriteString(html.EscapeString(n.Value))
 		b.WriteString("</code>")
 	case *ast.LinkNode:
-		fmt.Fprintf(b, "<a href=\"%s\"", html.EscapeString(n.Destination))
+		b.WriteString("<a href=\"" + html.EscapeString(n.Destination) + "\"")
 		if n.Title != "" {
-			fmt.Fprintf(b, " title=\"%s\"", html.EscapeString(n.Title))
+			b.WriteString(" title=\"" + html.EscapeString(n.Title) + "\"")
 		}
 		b.WriteString(">")
 		b.WriteString(renderInlines(n.Children))
 		b.WriteString("</a>")
+	case *ast.ImageNode:
+		b.WriteString("<img src=\"" + html.EscapeString(n.Destination) + "\" alt=\"" + html.EscapeString(n.Alt) + "\"")
+		if n.Title != "" {
+			b.WriteString(" title=\"" + html.EscapeString(n.Title) + "\"")
+		}
+		b.WriteString(">")
+	case *ast.StrikethroughNode:
+		b.WriteString("<del>")
+		b.WriteString(renderInlines(n.Children))
+		b.WriteString("</del>")
+	case *ast.HardBreakNode:
+		b.WriteString("<br>\n")
+	case *ast.AutolinkNode:
+		b.WriteString("<a href=\"" + html.EscapeString(n.Destination) + "\">" + html.EscapeString(n.Text) + "</a>")
 	}
 }
 
 func renderCodeBlock(b *strings.Builder, n *ast.FencedCodeBlockNode) {
 	if lang := firstWord(n.Info); lang != "" {
-		fmt.Fprintf(b, "<pre><code class=\"language-%s\">", html.EscapeString(lang))
+		b.WriteString("<pre><code class=\"language-" + html.EscapeString(lang) + "\">")
 	} else {
 		b.WriteString("<pre><code>")
 	}
@@ -101,7 +180,7 @@ func renderCodeBlock(b *strings.Builder, n *ast.FencedCodeBlockNode) {
 func renderListItem(b *strings.Builder, item *ast.ListItemNode) {
 	if len(item.Blocks) == 1 {
 		if para, ok := item.Blocks[0].(*ast.ParagraphNode); ok {
-			fmt.Fprintf(b, "<li>%s</li>\n", renderInlines(para.Inlines))
+			b.WriteString("<li>" + renderInlines(para.Inlines) + "</li>\n")
 			return
 		}
 	}

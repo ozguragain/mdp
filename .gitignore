@@ -4,19 +4,13 @@
 *.so
 *.dylib
 
-# Test binary, built with `go test -c`
 *.test
 
-# Code coverage profiles and other test artifacts
 *.out
 coverage.*
 *.coverprofile
 profile.cov
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
-# Go workspace file
 go.work
 go.work.sum
 
@@ -44,7 +38,16 @@ dist/
 
 .DS_Store
 *.exe
-bin/
+# Go build outputs, except the committed npm platform binaries
+bin/*
+!bin/mdp-*
 
 docs/
+ROADMAP.md
+PLAN.md
+NOTES.md
+TODO.md
+DESIGN.md
+*.plan.md
+*.notes.md
 
