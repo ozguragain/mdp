@@ -1,5 +1,5 @@
 {
-  "name": "mdp",
+  "name": "@ozguragain/mdp",
   "version": "0.1.0",
   "description": "Markdown to HTML compiler, built on the Go mdp toolchain. Build-time only: nothing here ships to the browser.",
   "type": "module",
@@ -26,6 +26,9 @@
   ],
   "engines": {
     "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "repository": {
     "type": "git",
