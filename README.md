@@ -1,4 +1,4 @@
-# @ozguragain/mdp
+# mdp
 
 Markdown to HTML, by driving the Go `mdp` compiler. A build-time tool: it shells
 out to a native binary, so it belongs in a build or server context, never in
