@@ -15,6 +15,43 @@ const html = compileHtml('# Hello **world**')
 // "<h1>Hello <strong>world</strong></h1>\n"
 ```
 
+## Supported syntax
+
+A small, explicit grammar — not CommonMark. Anything outside it renders as
+literal text.
+
+**Blocks**
+
+- ATX headings, `#` through `######`
+- paragraphs, separated by a blank line
+- fenced code blocks, backticks only, with an optional info string
+- blockquotes, `>`
+- unordered lists, `-`, `*` or `+`
+- ordered lists, `1.` or `1)`, starting at the number written
+- thematic breaks, `---`, `***` or `___`
+- pipe tables with a delimiter row, where `:---`, `:---:` and `---:` set column alignment
+- frontmatter between `---` fences at the head of a document, reported verbatim
+  rather than parsed — `readFrontmatter` returns it as a string
+
+**Inline**
+
+- text, with backslash escapes for the delimiter characters
+- emphasis, `*…*` or `_…_`
+- strong, `**…**` or `__…__`
+- strikethrough, `~~…~~`
+- inline code, `` `…` ``
+- links, `[text](url "title")`
+- images, `![alt](src "title")`
+- autolinks, `<https://example.com>` and `<user@example.com>`
+- hard breaks: two trailing spaces, or a trailing `\`, before the newline
+
+A link or image whose URL is unsafe — `javascript:`, `vbscript:`, `data:` —
+keeps its text and loses the target, with an `unsafe-url` diagnostic.
+
+**Not supported**, each landing in the output as literal text: setext headings,
+indented code blocks, `~~~` fences, reference links, task lists, footnotes, raw
+HTML and entity decoding.
+
 ## API
 
 | function | returns |
