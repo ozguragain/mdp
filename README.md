@@ -35,15 +35,6 @@ Diagnostics — the places the compiler recovered from — come back in
 
 ## Platform binaries
 
-`bin/mdp-darwin-arm64` and `bin/mdp-linux-x64` are committed. On anything else,
-build a binary with `scripts/build-binaries.sh` and commit it, or point
-`MDP_BIN` at one.
-
-## Installing from the repository instead
-
-Every release can also be consumed straight from a commit archive, with no
-registry and no login:
-
-```bash
-npm i https://codeload.github.com/ozguragain/mdp/tar.gz/<commit>
-```
+The package ships `bin/mdp-darwin-arm64` and `bin/mdp-linux-x64`. On any other
+platform, build one in the [mdp repository](https://github.com/ozguragain/mdp)
+with `scripts/build-binaries.sh` and point `MDP_BIN` at it.
