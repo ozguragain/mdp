@@ -33,6 +33,9 @@ export interface CompileResult {
 /** Compile markdown source to HTML plus its YAML frontmatter. */
 export function compile(source: string, options?: Options): CompileResult
 
+/** Compile markdown source to just the HTML fragment, dropping frontmatter and diagnostics. */
+export function compileHtml(source: string, options?: Options): string
+
 /**
  * Read only the YAML frontmatter from a source, without rendering anything.
  * One process spawn — enough for a post listing.

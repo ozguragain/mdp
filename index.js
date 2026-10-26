@@ -120,6 +120,18 @@ export function compile(source, options = {}) {
 }
 
 /**
+ * Compile markdown to an HTML fragment — `compile` without the frontmatter and
+ * diagnostics, for callers that only want the markup.
+ *
+ * @param {string} source markdown, optionally opening with "---" frontmatter
+ * @param {Options} [options]
+ * @returns {string} the escaped HTML fragment
+ */
+export function compileHtml(source, options = {}) {
+  return compile(source, options).html
+}
+
+/**
  * Read only the YAML frontmatter from a source, without rendering anything.
  * One process spawn — enough for a post listing.
  *
